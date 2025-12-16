@@ -1,0 +1,16 @@
+85 (U),		△		每一行會對應到一個設定
+72 (H),		□		只有第一個單字會被解析為設定(以空白分割)，因此後面全是註解
+J (VK Codes:74),×		前12個設定是按鍵配置
+K (VK Codes:75),◯		請使用十進位數字的Virtual-Key Codes，具體數值請參考https://learn.microsoft.com/en-us/windows/win32/inputdev/virtual-key-codes
+38 (VK_UP),	🡅		如果是字母按鍵，你也可以使用單一大寫字母而不是Virtual-Key Codes，就像上面的J和K一樣。
+37 (VK_LEFT),	🡄		Each line corresponds to a setting. Only the first word is interpreted as a setting (separated by spaces), therefore the rest are comments.
+40 (VK_DOWN),	🡇		The first 12 settings are for key configuration. Please use decimal Virtual-Key Codes. You can refer to https://learn.microsoft.com/en-us/windows/win32/inputdev/virtual-key-codes
+39 (VK_RIGHT),	🡆		If it's a letter key, you can also use a single uppercase letter instead of Virtual-Key Codes, like J and K above.
+65 'A'		[↼ 		這裡是滑鍵設定
+68 'D'		    ⇀]		Slide button settings
+49 '1'			[↼ 
+51 '3'			    ⇀]		
+1.0	slide_require_multiplier	此設定為滑動的閥值，值越大則需要越大的速度才會判定為滑動
+1	output_received_message		是否輸出從平板收到的信息
+1	output_keyboard_operation	是否輸出所進行的按鍵操作與按鍵狀態
+1	test_connection_stability	是否要進行連線穩定度測試
