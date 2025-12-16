@@ -5,6 +5,8 @@
 #define BOOST_SYSTEM_USE_UTF8
 // Store the current warning state and set a minimal warning level (level 0 is lowest)
 #pragma warning(push, 0)
+// Warning: I modified boost_1_89_0\boost\beast\websocket\stream.hpp, 
+// setting boost::beast::websocket::stream.impl_; to public.
 #include <boost/beast.hpp>
 #include <boost/asio.hpp>
 #include <boost/container/static_vector.hpp>
