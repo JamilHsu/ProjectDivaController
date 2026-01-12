@@ -664,7 +664,24 @@ void do_session(tcp::socket socket) {
             std::println("[Server] Reply {} bytes", res.body().size());
             return;
         }
-        else if (req.target().ends_with(".png")) {
+        else if (req.target().starts_with("/image/")) {
+            const char* content_type;
+            if (req.target().ends_with(".svg")) {
+                content_type = "image/svg+xml";
+            }
+            else if (req.target().ends_with(".png")) {
+                content_type = "image/png";
+            }
+            else if (req.target().ends_with(".jpg") || req.target().ends_with(".jpeg")) {
+                content_type = "image/jpeg";
+            }
+            else if (req.target().ends_with(".gif")) {
+                content_type = "image/gif";
+            }
+            else {
+                goto unknown_target;
+            }
+
             tcp::endpoint remote = socket.remote_endpoint();
             std::println("[Server] HTTP request [{}] from {}:{}", req.target(), remote.address().to_string(), remote.port());
 
@@ -675,7 +692,7 @@ void do_session(tcp::socket socket) {
                 http::status::ok, req.version()
             };
 
-            res.set(http::field::content_type, "image/png");
+            res.set(http::field::content_type, content_type);
             res.body() = std::vector<uint8_t>(
                 std::istreambuf_iterator<char>(ifs),
                 std::istreambuf_iterator<char>()
@@ -703,6 +720,7 @@ void do_session(tcp::socket socket) {
             }
         }
         else {
+            unknown_target:
             tcp::endpoint remote = socket.remote_endpoint();
             std::println("[Server] HTTP request [{}] from {}:{}\n"
                 "[Server] Nothing replied.\n", req.target(), remote.address().to_string(), remote.port());
@@ -716,7 +734,6 @@ void do_session(tcp::socket socket) {
         printError("[Server] Exception: {}", e.what());
         MessageBeep(MB_ICONERROR);
     }
-    SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_NORMAL);
 }
 
 int main() {
@@ -725,6 +742,8 @@ int main() {
 
     ReadAndPrintSettings();
     listLocalIPsAndAdapters();
+    std::println("Service listening on port 3939\n");
+
     boost::asio::io_context ioc;
     tcp::acceptor acceptor{ ioc, {tcp::v4(), 3939} };
 

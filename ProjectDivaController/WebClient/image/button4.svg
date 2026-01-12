@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="100" height="98" viewBox="0 0 100 98"
+	xmlns="http://www.w3.org/2000/svg">
+	<defs>
+		<mask id="ringMask">
+			<rect x="0" y="0" width="100" height="98" fill="black"/>
+			<circle cx="50" cy="45" r="42" fill="white"/>
+			<circle cx="50" cy="45" r="27" fill="black"/>
+		</mask>
+	</defs>
+	<!-- shadow -->
+	<circle cx="55" cy="53" r="34.5" fill="none" stroke="#000" stroke-width="21.0" opacity="0.39"/>
+	<!-- black stroke -->
+	<circle cx="50" cy="45" r="34.5" fill="none" stroke="#000" stroke-width="21.0"/>
+	<!-- Ring body -->
+	<rect width="100%" height="100%" fill="#FF2277" mask="url(#ringMask)"/>
+	<!-- light -->
+	<circle cx="30" cy="13" r="45" fill="#FF99BB" mask="url(#ringMask)"/>
+</svg>

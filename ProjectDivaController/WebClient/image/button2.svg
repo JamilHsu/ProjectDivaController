@@ -1,0 +1,19 @@
+<svg width="82" height="80" viewBox="0 0 82 80"
+	xmlns="http://www.w3.org/2000/svg">
+	<defs>
+		<mask id="ringMask">
+			<rect width="100%" height="100%" fill="black"/>
+			<rect x="5" y="0" width="72" height="72" fill="white"/>
+			<rect x="26" y="21" width="30" height="30" fill="black"/>
+		</mask>
+		<mask id="fillMask">
+			<rect width="100%" height="100%" fill="black"/>
+			<rect x="8" y="3" width="66" height="66" fill="white"/>
+			<rect x="23" y="18" width="36" height="36" fill="black"/>
+		</mask>
+	</defs>
+	<rect width="100%" height="100%" fill="black" opacity="0.39" transform="translate(5,8)" mask="url(#ringMask)"/>
+	<rect width="100%" height="100%" fill="black" mask="url(#ringMask)"/>
+	<rect width="100%" height="100%" fill="#FF66DD" mask="url(#fillMask)"/>
+	<circle cx="10" cy="0" r="45" fill="#FF99FF" mask="url(#fillMask)"/>
+</svg>

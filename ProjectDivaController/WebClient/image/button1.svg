@@ -1,0 +1,19 @@
+<svg width="106" height="93" viewBox="0 0 106 93"
+	xmlns="http://www.w3.org/2000/svg">
+	<defs>
+		<mask id="triRingMask">
+			<rect width="100%" height="100%" fill="black"/>
+			<path d="M53 0 L5 85 L101 85 Z" fill="white"/>
+			<path d="M53 40.67 L39.26 65 L66.74 65 Z" fill="black"/>
+		</mask>
+		<mask id="triFillMask">
+			<rect width="100%" height="100%" fill="black"/>
+			<path d="M53 6.101 L10.14 82 L95.86 82 Z" fill="white"/>
+			<path d="M53 34.57 L34.12 68 L71.88 68 Z" fill="black"/>
+		</mask>
+	</defs>
+	<rect width="100%" height="100%" fill="black" opacity="0.39" transform="translate(5,8)" mask="url(#triRingMask)"/>
+	<rect width="100%" height="100%" fill="black" mask="url(#triRingMask)"/>
+	<rect width="100%" height="100%" fill="#00DDAA" mask="url(#triFillMask)"/>
+	<circle cx="35" cy="16" r="45" fill="#77FFCC" mask="url(#triFillMask)"/>
+</svg>
