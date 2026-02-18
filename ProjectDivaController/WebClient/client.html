@@ -46,12 +46,10 @@ html, body {
     pointer-events:none;
 }
 
-/* 上方黃色區塊 */
 #topBar {
-    background:#FFFF00;
+    background:#FEFF00;
 }
 
-/* 下方按鈕區域 */
 #buttonsArea {
     flex:1;
     display:flex;
@@ -134,21 +132,19 @@ startBtn.addEventListener("click", async () => {
     showTouchArea();
 });
 
-/* ---------------- 螢幕尺寸傳送 ---------------- */
 const slider_height = 25;
 function sendScreenInfo() {
     const topBar = document.getElementById("topBar");
     topBar.style.height = slider_height + "%";
 
-    const dpr = window.devicePixelRatio || 1;
     let w, h;
 
     if (window.visualViewport) {
-        w = Math.round(window.visualViewport.width  * dpr);
-        h = Math.round(window.visualViewport.height * dpr);
+        w = Math.floor(window.visualViewport.width) + 1;
+        h = Math.floor(window.visualViewport.height) + 1;
     } else {
-        w = Math.round(window.innerWidth  * dpr);
-        h = Math.round(window.innerHeight * dpr);
+        w = Math.floor(window.innerWidth) + 1;
+        h = Math.floor(window.innerHeight) + 1;
     }
 
     const manu  = navigator.vendor || "";
@@ -162,20 +158,13 @@ if (window.visualViewport) {
     window.visualViewport.addEventListener("resize", sendScreenInfo);
 }
 
-/* ---------------- Pixel conversion ---------------- */
-const dpr = window.devicePixelRatio || 1;
-function toPx(x, y) {
-    return [(x * dpr) | 0, (y * dpr) | 0];
-}
-
 /* ---------------- Touch handling ---------------- */
 
 area.addEventListener("touchstart", e => {
     e.preventDefault();
     for (const t of e.changedTouches) {
-        const [px, py] = toPx(t.clientX, t.clientY);
-        lastPos.set(t.identifier, px);
-        wsSend(`D ${t.identifier} ${px} ${py}\n`);
+        lastPos.set(t.identifier, t.clientX);
+        wsSend(`D ${t.identifier} ${t.clientX | 0} ${t.clientY | 0}\n`);
     }
 }, { passive: false });
 
@@ -185,11 +174,9 @@ area.addEventListener("touchmove", e => {
     let changed = false;
 
     for (const t of e.changedTouches) {
-        const [px, py] = toPx(t.clientX, t.clientY);
-
-        if (lastPos.get(t.identifier) !== px) {
-            lastPos.set(t.identifier, px);
-            msg += ` ${t.identifier} ${px} ${py}`;
+        if (Math.abs(lastPos.get(t.identifier) - t.clientX) > 2) {
+            lastPos.set(t.identifier, t.clientX);
+            msg += ` ${t.identifier} ${t.clientX | 0} ${t.clientY | 0}`;
             changed = true;
         }
     }
@@ -201,8 +188,7 @@ area.addEventListener("touchend", e => {
     e.preventDefault();
     for (const t of e.changedTouches) {
         lastPos.delete(t.identifier);
-        const [px, py] = toPx(t.clientX, t.clientY);
-        wsSend(`U ${t.identifier} ${px} ${py}\n`);
+        wsSend(`U ${t.identifier} ${t.clientX | 0} ${t.clientY | 0}\n`);
     }
 }, { passive: false });
 

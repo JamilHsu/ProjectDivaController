@@ -37,16 +37,16 @@ bool g_output_keyboard_operation = false;
 #endif // DEBUG
 
 std::array<BYTE, 8> vk_button{
-    'U',
-    'H',
+    'I',
     'J',
     'K',
-    VK_UP,
-    VK_LEFT,
-    VK_DOWN,
-    VK_RIGHT,
+    'L',
+    'W',
+    'A',
+    'S',
+    'D',
 };
-auto vk_stick = [vk_s = std::array<BYTE, 5>{ '1', 'A', '\0', 'D', '3' }]
+auto vk_stick = [vk_s = std::array<BYTE, 5>{ 'Q', 'U', '\0', 'E', 'O' }]
 (int stick) mutable ->BYTE& {
     return vk_s.at(stick + 2);
     };
@@ -316,12 +316,8 @@ public:
             //增加動量
             int max_momentum2 = max_momentum + reduce_displacement;
             for (auto i : candidate) {
-                map_ID_cache[i.ID].momentum += i.displacement;
-                if (abs(map_ID_cache[i.ID].momentum) > max_momentum2) {
-                    map_ID_cache[i.ID].momentum =
-                        (map_ID_cache[i.ID].momentum > 0) ?
-                        max_momentum2 : -max_momentum2;
-                }
+                map_ID_cache[i.ID].momentum
+                    = std::clamp(map_ID_cache[i.ID].momentum + i.displacement, -max_momentum2, max_momentum2);
             }
 
             //減少動量並抬起按鍵
@@ -384,27 +380,21 @@ public:
             map_ID_cache[candidateR.ID].press_time = GetTickCount32();
             //給予初始動量
             {
-                map_ID_cache[candidateL.ID].momentum += candidateL.displacement;
-                if (abs(map_ID_cache[candidateL.ID].momentum) > max_momentum) {
-                    map_ID_cache[candidateL.ID].momentum =
-                        (map_ID_cache[candidateL.ID].momentum > 0) ?
-                        max_momentum : -max_momentum;
-                }
-                map_ID_cache[candidateR.ID].momentum += candidateR.displacement;
-                if (abs(map_ID_cache[candidateR.ID].momentum) > max_momentum) {
-                    map_ID_cache[candidateR.ID].momentum =
-                        (map_ID_cache[candidateR.ID].momentum > 0) ?
-                        max_momentum : -max_momentum;
-                }
+                map_ID_cache[candidateL.ID].momentum
+                    = std::clamp(map_ID_cache[candidateL.ID].momentum + candidateL.displacement, -max_momentum, max_momentum);
+                map_ID_cache[candidateR.ID].momentum
+                    = std::clamp(map_ID_cache[candidateR.ID].momentum + candidateR.displacement, -max_momentum, max_momentum);
             }
             INPUT input[2]{};
             input[0].type = input[1].type = INPUT_KEYBOARD;
             input[0].ki.wVk = vk_stick(keybd_state.sticks[0]);
             input[1].ki.wVk = vk_stick(keybd_state.sticks[1]);
             SendInput(2, input, sizeof(INPUT));
-            std::print("{} {}  [DOWN]\n",
-                keybd_state.sticks[0] > 0 ? "->" : "<-",
-                keybd_state.sticks[1] > 0 ? "->" : "<-");
+            if (g_output_keyboard_operation) {
+                std::print("{} {}  [DOWN]\n",
+                    keybd_state.sticks[0] > 0 ? "->" : "<-",
+                    keybd_state.sticks[1] > 0 ? "->" : "<-");
+            }
         }
         else if (freestickcount >= 1
             && candidate.size() >= 1
@@ -423,12 +413,8 @@ public:
             map_ID_cache[Candidate.ID].press_time = GetTickCount32();
 
             //給予初始動量
-            map_ID_cache[Candidate.ID].momentum += Candidate.displacement;
-            if (abs(map_ID_cache[Candidate.ID].momentum) > max_momentum) {
-                map_ID_cache[Candidate.ID].momentum =
-                    (map_ID_cache[Candidate.ID].momentum > 0) ?
-                    max_momentum : -max_momentum;
-            }
+            map_ID_cache[Candidate.ID].momentum
+                = std::clamp(map_ID_cache[Candidate.ID].momentum + Candidate.displacement, -max_momentum, max_momentum);
             SendKeybdInput(vk_stick(keybd_state.sticks[LR - 1]));
         }
         for (auto& i : map_ID_cache) {
