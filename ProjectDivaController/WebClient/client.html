@@ -1,202 +1,206 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
-<head>
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
-<style>
-html, body {
-    margin:0;
-    padding:0;
-    width:100%;
-    height:100%;
-    background:#000;
-    overflow:hidden;
-    touch-action:none;
-    font-family:sans-serif;
-
-    -webkit-user-select:none;
-    -ms-user-select:none;
-    user-select:none;
-
-    -webkit-touch-callout:none;
-    user-touch-callout:none;
-
-    -webkit-user-drag:none;
-    user-drag:none;
-}
-
-#startBtn {
-    position:fixed;
-    inset:0;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    background:#222;
-    color:#fff;
-    font-size:2em;
-    cursor:pointer;
-    user-select:none;
-}
-
-#area {
-    width:100%;
-    height:100%;
-    display:flex;
-    flex-direction:column;
-    opacity:0;
-    pointer-events:none;
-}
-
-#topBar {
-    background:#FEFF00;
-}
-
-#buttonsArea {
-    flex:1;
-    display:flex;
-}
-
-.section {
-    flex:1;
-    position:relative;
-}
-
-#sec1 { background:#00DDAA; }
-#sec2 { background:#FF66DD; }
-#sec3 { background:#44AAFF; }
-#sec4 { background:#FF2277; }
-
-.section img {
-    position:absolute;
-    top:0;
-    left:0;
-    width:100%;
-    height:100%;
-    object-fit:contain;
-    pointer-events:none;
-}
-</style>
-</head>
-<body>
-
-<div id="startBtn">Touch to Start</div>
-
-<div id="area">
-    <div id="topBar"></div>
-    <div id="buttonsArea">
-        <div id="sec1" class="section"><img src="/image/button1.svg"></div>
-        <div id="sec2" class="section"><img src="/image/button2.svg"></div>
-        <div id="sec3" class="section"><img src="/image/button3.svg"></div>
-        <div id="sec4" class="section"><img src="/image/button4.svg"></div>
+  <head>
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no"
+    />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+    />
+    <style>
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        background: #000;
+        overflow: hidden;
+        touch-action: none;
+        font-family: sans-serif;
+        -webkit-user-select: none;
+        user-select: none;
+        -webkit-touch-callout: none;
+        -webkit-user-drag: none;
+      }
+      #startBtn {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background: #222;
+        color: #fff;
+        cursor: pointer;
+      }
+      #startBtnMain {
+        font-size: 2em;
+      }
+      #iosMessage {
+        font-size: 1em;
+        opacity: 0;
+      }
+      #area {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        opacity: 0;
+        pointer-events: none;
+      }
+      #topBar {
+        background: #feff00;
+      }
+      #buttonsArea {
+        flex: 1;
+        display: flex;
+      }
+      .section {
+        flex: 1;
+        position: relative;
+      }
+      .section:nth-child(1) {
+        background: #00ddaa;
+      }
+      .section:nth-child(2) {
+        background: #ff66dd;
+      }
+      .section:nth-child(3) {
+        background: #44aaff;
+      }
+      .section:nth-child(4) {
+        background: #ff2277;
+      }
+      .section img {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        pointer-events: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="startBtn">
+      <p id="startBtnMain">Touch to Start</p>
+      <p id="iosMessage">
+        For fullscreen on iOS:<br />Tap "Share" → "Add to Home Screen"
+      </p>
     </div>
-</div>
+    <div id="area">
+      <div id="topBar"></div>
+      <div id="buttonsArea">
+        <div class="section"><img src="/image/button1.svg" /></div>
+        <div class="section"><img src="/image/button2.svg" /></div>
+        <div class="section"><img src="/image/button3.svg" /></div>
+        <div class="section"><img src="/image/button4.svg" /></div>
+      </div>
+    </div>
+    <script>
+      document.addEventListener("contextmenu", (e) => e.preventDefault());
 
-<script>
-document.addEventListener("contextmenu", e => e.preventDefault());
+      const isiOS = ["iPhone", "iPad", "iPod"].includes(
+        navigator.userAgentData?.platform ?? navigator.platform,
+      );
+      if (isiOS) document.getElementById("iosMessage").style.opacity = "1";
 
-/* ---------------- WebSocket ---------------- */
-const ws = new WebSocket("ws://" + location.host + "/ws");
-function wsSend(s) {
-    if (ws.readyState === 1) ws.send(s);
-}
-ws.onmessage = ev => {
-    let s = ev.data;
-    if (s.length >= 2) s = s[0] + 'O' + s.slice(2);
-    ws.send(s);
-};
+      const ws = new WebSocket(`ws://${location.host}/ws`);
+      const wsSend = (s) => ws.readyState === 1 && ws.send(s);
+      ws.onmessage = ({ data: s }) =>
+        ws.send(s.length >= 2 ? s[0] + "O" + s.slice(2) : s);
 
-/* ---------------- 全螢幕 + 開始 ---------------- */
-const startBtn = document.getElementById("startBtn");
-const area     = document.getElementById("area");
+      const SLIDER_HEIGHT = 40;
+      const area = document.getElementById("area");
+      const topBar = document.getElementById("topBar");
 
-const lastPos  = new Map();
+      function sendScreenInfo() {
+        topBar.style.height = SLIDER_HEIGHT + "%";
+        const vp = window.visualViewport;
+        const w = Math.floor(vp ? vp.width : innerWidth) + 1;
+        const h = Math.floor(vp ? vp.height : innerHeight) + 1;
+        wsSend(
+          `SCREENSIZE: ${w} ${h} ${SLIDER_HEIGHT} ${navigator.vendor ?? ""} ${navigator.userAgent}\n`,
+        );
+      }
 
-async function enterFullscreen() {
-    const d = document.documentElement;
-    try {
-        if (!document.fullscreenElement) {
-            if (d.requestFullscreen) await d.requestFullscreen();
-            else if (d.webkitRequestFullscreen) await d.webkitRequestFullscreen();
-        }
-    } catch(e){}
-}
+      document
+        .getElementById("startBtn")
+        .addEventListener("click", async () => {
+          if (!isiOS && !document.fullscreenElement) {
+            const el = document.documentElement;
+            try {
+              await (el.requestFullscreen ?? el.webkitRequestFullscreen).call(
+                el,
+              );
+            } catch {}
+          }
+          document.getElementById("startBtn").style.display = "none";
+          area.style.opacity = "1";
+          area.style.pointerEvents = "auto";
+          sendScreenInfo();
+        });
 
-function showTouchArea() {
-    startBtn.style.display = "none";
-    area.style.opacity = "1";
-    area.style.pointerEvents = "auto";
-    sendScreenInfo();
-}
+      window.addEventListener("resize", sendScreenInfo);
+      window.visualViewport?.addEventListener("resize", sendScreenInfo);
 
-startBtn.addEventListener("click", async () => {
-    await enterFullscreen();
-    showTouchArea();
-});
+      const lastPos = new Map();
 
-const slider_height = 25;
-function sendScreenInfo() {
-    const topBar = document.getElementById("topBar");
-    topBar.style.height = slider_height + "%";
-
-    let w, h;
-
-    if (window.visualViewport) {
-        w = Math.floor(window.visualViewport.width) + 1;
-        h = Math.floor(window.visualViewport.height) + 1;
-    } else {
-        w = Math.floor(window.innerWidth) + 1;
-        h = Math.floor(window.innerHeight) + 1;
-    }
-
-    const manu  = navigator.vendor || "";
-    const model = navigator.userAgent || "";
-
-    wsSend(`SCREENSIZE: ${w} ${h} ${slider_height} ${manu} ${model}\n`);
-}
-
-window.addEventListener("resize", sendScreenInfo);
-if (window.visualViewport) {
-    window.visualViewport.addEventListener("resize", sendScreenInfo);
-}
-
-/* ---------------- Touch handling ---------------- */
-
-area.addEventListener("touchstart", e => {
-    e.preventDefault();
-    for (const t of e.changedTouches) {
-        lastPos.set(t.identifier, t.clientX);
-        wsSend(`D ${t.identifier} ${t.clientX | 0} ${t.clientY | 0}\n`);
-    }
-}, { passive: false });
-
-area.addEventListener("touchmove", e => {
-    e.preventDefault();
-    let msg = "";
-    let changed = false;
-
-    for (const t of e.changedTouches) {
-        if (Math.abs(lastPos.get(t.identifier) - t.clientX) > 2) {
+      area.addEventListener(
+        "touchstart",
+        (e) => {
+          e.preventDefault();
+          for (const t of e.changedTouches) {
             lastPos.set(t.identifier, t.clientX);
-            msg += ` ${t.identifier} ${t.clientX | 0} ${t.clientY | 0}`;
-            changed = true;
-        }
-    }
+            wsSend(`D ${t.identifier} ${t.clientX | 0} ${t.clientY | 0}\n`);
+          }
+        },
+        { passive: false },
+      );
 
-    if (changed) wsSend("M" + msg + "\n");
-}, { passive: false });
+      area.addEventListener(
+        "touchmove",
+        (e) => {
+          e.preventDefault();
+          const parts = [];
+          for (const t of e.changedTouches) {
+            if (
+              Math.abs((lastPos.get(t.identifier) ?? t.clientX) - t.clientX) > 2
+            ) {
+              lastPos.set(t.identifier, t.clientX);
+              parts.push(`${t.identifier} ${t.clientX | 0} ${t.clientY | 0}`);
+            }
+          }
+          if (parts.length) wsSend("M " + parts.join(" ") + "\n");
+        },
+        { passive: false },
+      );
 
-area.addEventListener("touchend", e => {
-    e.preventDefault();
-    for (const t of e.changedTouches) {
-        lastPos.delete(t.identifier);
-        wsSend(`U ${t.identifier} ${t.clientX | 0} ${t.clientY | 0}\n`);
-    }
-}, { passive: false });
+      area.addEventListener(
+        "touchend",
+        (e) => {
+          e.preventDefault();
+          for (const t of e.changedTouches) {
+            lastPos.delete(t.identifier);
+            wsSend(`U ${t.identifier} ${t.clientX | 0} ${t.clientY | 0}\n`);
+          }
+        },
+        { passive: false },
+      );
 
-area.addEventListener("touchcancel", e => {
-    e.preventDefault();
-    lastPos.clear();
-    wsSend("C\n");
-}, { passive: false });
-</script>
-</body>
+      area.addEventListener(
+        "touchcancel",
+        (e) => {
+          e.preventDefault();
+          lastPos.clear();
+          wsSend("C\n");
+        },
+        { passive: false },
+      );
+    </script>
+  </body>
 </html>
