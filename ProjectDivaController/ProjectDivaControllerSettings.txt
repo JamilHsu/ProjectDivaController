@@ -10,6 +10,5 @@ Q (VK code:81),	[↼ 		這裡是滑鍵設定
 E (VK code:69),	    ⇀]		Slide button settings.
 U (VK code:85),		[↼ 
 O (VK code:79),		    ⇀]		
-1.0	slide_require_multiplier	此設定為滑動的閥值，值越大則需要越大的速度才會判定為滑動
-1	output_received_message		是否輸出從平板收到的信息
-1	output_keyboard_operation	是否輸出所進行的按鍵操作與按鍵狀態
+0	output_received_message		是否輸出從平板收到的信息
+0	output_keyboard_operation	是否輸出所進行的按鍵操作與按鍵狀態

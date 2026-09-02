@@ -1,0 +1,7 @@
+enabled = true
+name = "ProjectDivaControllerWebServer"
+description = "Automatically launch ProjectDivaController.exe"
+version = "2.0"
+date = "2.09.2026"
+author = "Jamil"
+dll = ["Run ProjectDivaController_exe.dll"]

@@ -71,10 +71,10 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>C:\Users\許OO小捧油\source\boost_1_89_0;$(IncludePath)</IncludePath>
+    <IncludePath>C:\Users\許OO小捧油\source\boost_1_91_0;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>C:\Users\許OO小捧油\source\boost_1_89_0;$(IncludePath)</IncludePath>
+    <IncludePath>C:\Users\許OO小捧油\source\boost_1_91_0;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -134,6 +134,9 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <None Include="mod.c">
+      <FileType>CppCode</FileType>
+    </None>
     <ClCompile Include="ProjectDivaController.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -145,6 +148,12 @@
   </ItemGroup>
   <ItemGroup>
     <Image Include="..\miku.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="config.toml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="ProjectDivaControllerSettings.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

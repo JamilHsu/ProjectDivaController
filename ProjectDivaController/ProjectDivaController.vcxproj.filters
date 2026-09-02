@@ -37,4 +37,17 @@
       <Filter>資源檔</Filter>
     </Image>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="config.toml">
+      <Filter>來源檔案</Filter>
+    </None>
+    <None Include="mod.c">
+      <Filter>來源檔案</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="ProjectDivaControllerSettings.txt">
+      <Filter>來源檔案</Filter>
+    </Text>
+  </ItemGroup>
 </Project>

@@ -1,202 +1,617 @@
 <!DOCTYPE html>
-<html>
 <head>
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+<html lang="en">
+<link rel="apple-touch-icon-precomposed" href="/favicon.ico">
+<link rel="apple-touch-icon" href="/favicon.ico">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<title>Diva Controller</title>
 <style>
-html, body {
-    margin:0;
-    padding:0;
-    width:100%;
-    height:100%;
-    background:#000;
-    overflow:hidden;
-    touch-action:none;
-    font-family:sans-serif;
+  :root {
+    --lane0-normal: rgba(0,221,170,0.847);
+    --lane0-full:   rgb(0,221,170);
+    --lane1-normal: rgba(255,102,221,0.847);
+    --lane1-full:   rgb(255,102,221);
+    --lane2-normal: rgba(68,170,255,0.847);
+    --lane2-full:   rgb(68,170,255);
+    --lane3-normal: rgba(255,34,119,0.847);
+    --lane3-full:   rgb(255,34,119);
+    --slider-bg:    rgba(254,255,0,0.847);
 
-    -webkit-user-select:none;
-    -ms-user-select:none;
-    user-select:none;
+    --slider-height-ratio: 30%;
+  }
 
-    -webkit-touch-callout:none;
-    user-touch-callout:none;
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
-    -webkit-user-drag:none;
-    user-drag:none;
-}
+  html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    background: #000;
+    overflow: hidden;
+    overscroll-behavior: none;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
 
-#startBtn {
-    position:fixed;
-    inset:0;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    background:#222;
-    color:#fff;
-    font-size:2em;
-    cursor:pointer;
-    user-select:none;
-}
+  #startScreen {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 24px;
+    color: #eee;
+    font-size: 39px;
+    letter-spacing: 0.02em;
+    background: #000;
+    z-index: 30;
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+    text-align: center;
+  }
 
-#area {
-    width:100%;
-    height:100%;
-    display:flex;
-    flex-direction:column;
-    opacity:0;
-    pointer-events:none;
-}
+  /* iOS Safari Add to HomeScreen hint,
+     預設隱藏,由 JS 依 navigator.standalone 決定是否顯示 */
+  #a2hsHint {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    font-size: 20px;
+    max-width: 320px;
+  }
 
-#topBar {
-    background:#FEFF00;
-}
+  #a2hsHint .a2hsStep {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
 
-#buttonsArea {
-    flex:1;
-    display:flex;
-}
+  #a2hsHint .a2hsArrow {
+    font-size: 24px;
+    line-height: 1;
+  }
 
-.section {
-    flex:1;
-    position:relative;
-}
+  #a2hsHint svg {
+    width: 20px;
+    height: 20px;
+    flex: none;
+    vertical-align: middle;
+  }
 
-#sec1 { background:#00DDAA; }
-#sec2 { background:#FF66DD; }
-#sec3 { background:#44AAFF; }
-#sec4 { background:#FF2277; }
+  #statusText {
+    position: fixed;
+    top: calc(8px + env(safe-area-inset-top));
+    left: calc(8px + env(safe-area-inset-left));
+    display: none;
+    align-items: center;
+    gap: 8px;
+    z-index: 20;
+    pointer-events: none;
+  }
 
-.section img {
-    position:absolute;
-    top:0;
-    left:0;
-    width:100%;
-    height:100%;
-    object-fit:contain;
-    pointer-events:none;
-}
+  #statusText span {
+    color: #ff5555;
+    font-size: 20px;
+  }
+
+  #statusText button {
+    pointer-events: auto;
+    font-size: 20px;
+    color: #eee;
+    background: #333;
+    border: 1px solid #ff5555;
+    border-radius: 4px;
+    padding: 3px 8px;
+  }
+
+  #touchArea {
+    position: fixed;
+    inset: 0;
+    display: none;
+    touch-action: none;
+  }
+
+  #sliderLayout {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: var(--slider-height-ratio);
+    display: flex;
+    flex-direction: row;
+    pointer-events: none;
+  }
+
+  .sliderZone {
+    flex: 1 1 0;
+    height: 100%;
+    background: var(--slider-bg);
+    position: relative;
+    overflow: hidden;
+  }
+
+  #buttonLayout {
+    position: absolute;
+    top: var(--slider-height-ratio);
+    left: 0; right: 0; bottom: 0;
+    display: flex;
+    flex-direction: row;
+    pointer-events: none;
+  }
+
+  .laneBtn {
+    flex: 1 1 0;
+    height: 100%;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .icon {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    visibility: hidden;
+    pointer-events: none;
+    -webkit-user-drag: none;
+  }
 </style>
 </head>
 <body>
-
-<div id="startBtn">Touch to Start</div>
-
-<div id="area">
-    <div id="topBar"></div>
-    <div id="buttonsArea">
-        <div id="sec1" class="section"><img src="/image/button1.svg"></div>
-        <div id="sec2" class="section"><img src="/image/button2.svg"></div>
-        <div id="sec3" class="section"><img src="/image/button3.svg"></div>
-        <div id="sec4" class="section"><img src="/image/button4.svg"></div>
+  <div id="startScreen">
+    <div id="startMain">Touch to Start</div>
+    <div id="a2hsHint">
+      <div>For fullscreen on iOS:</div>
+      <div class="a2hsStep">
+        <span>Tap</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v13"/><path d="M8 5l4-4 4 4"/><path d="M8 9h-1a3 3 0 0 0 -3 3v8a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3v-8a3 3 0 0 0 -3-3h-1"/></svg>
+        <span>"Share"</span>
+      </div>
+      <div class="a2hsArrow">&#8595;</div>
+      <div class="a2hsStep">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="4"/><path d="M12 8v8"/><path d="M8 12h8"/></svg>
+        <span>Add to Home Screen</span>
+      </div>
+      <div>and Open as Web App</div>
     </div>
-</div>
+  </div>
+  <div id="statusText">
+    <span>Disconnected</span>
+    <button id="reconnectBtn" type="button">Reconnect</button>
+  </div>
+  <div id="touchArea">
+    <div id="sliderLayout">
+      <div class="sliderZone">
+        <img class="icon" data-key="slide_left" src="/image/slide_left.png" alt="">
+        <img class="icon" data-key="slide_left_sync" src="/image/slide_left_sync.png" alt="">
+        <img class="icon" data-key="slide_right" src="/image/slide_right.png" alt="">
+        <img class="icon" data-key="slide_right_sync" src="/image/slide_right_sync.png" alt="">
+      </div>
+      <div class="sliderZone">
+        <img class="icon" data-key="slide_left" src="/image/slide_left.png" alt="">
+        <img class="icon" data-key="slide_left_sync" src="/image/slide_left_sync.png" alt="">
+        <img class="icon" data-key="slide_right" src="/image/slide_right.png" alt="">
+        <img class="icon" data-key="slide_right_sync" src="/image/slide_right_sync.png" alt="">
+      </div>
+    </div>
+    <div id="buttonLayout">
+      <div class="laneBtn" id="lane0">
+        <img class="icon" data-key="triangle" src="/image/triangle.svg" alt="">
+        <img class="icon" data-key="triangle_sync" src="/image/triangle_sync.svg" alt="">
+      </div>
+      <div class="laneBtn" id="lane1">
+        <img class="icon" data-key="square" src="/image/square.svg" alt="">
+        <img class="icon" data-key="square_sync" src="/image/square_sync.svg" alt="">
+      </div>
+      <div class="laneBtn" id="lane2">
+        <img class="icon" data-key="cross" src="/image/cross.svg" alt="">
+        <img class="icon" data-key="cross_sync" src="/image/cross_sync.svg" alt="">
+      </div>
+      <div class="laneBtn" id="lane3">
+        <img class="icon" data-key="circle" src="/image/circle.svg" alt="">
+        <img class="icon" data-key="circle_sync" src="/image/circle_sync.svg" alt="">
+      </div>
+    </div>
+  </div>
 
 <script>
-document.addEventListener("contextmenu", e => e.preventDefault());
+(function () {
+  'use strict';
 
-/* ---------------- WebSocket ---------------- */
-const ws = new WebSocket("ws://" + location.host + "/ws");
-function wsSend(s) {
-    if (ws.readyState === 1) ws.send(s);
-}
-ws.onmessage = ev => {
-    let s = ev.data;
-    if (s.length >= 2) s = s[0] + 'O' + s.slice(2);
-    ws.send(s);
-};
+  // --slider-height-ratio is in the CSS above.
 
-/* ---------------- 全螢幕 + 開始 ---------------- */
-const startBtn = document.getElementById("startBtn");
-const area     = document.getElementById("area");
+  const CONFIG = {
+    // unit: CSS pixel
+    sliderRequire1: 29,
+    sliderRequire2: 39,
+    // unit: unit: CSS pixel/millisecond
+    energyDecayRate1: 0.15,
+    energyDecayRate2: 0.15,
+  };
 
-const lastPos  = new Map();
+  // ---- WebSocket ----
+  let ws = null;
+  let hasConnectedOnce = false;
+  let connecting = false;
 
-async function enterFullscreen() {
-    const d = document.documentElement;
-    try {
-        if (!document.fullscreenElement) {
-            if (d.requestFullscreen) await d.requestFullscreen();
-            else if (d.webkitRequestFullscreen) await d.webkitRequestFullscreen();
-        }
-    } catch(e){}
-}
+  const LANE_STYLES = [
+    { normal: 'var(--lane0-normal)', full: 'var(--lane0-full)', icon: 'triangle', iconSync: 'triangle_sync' },
+    { normal: 'var(--lane1-normal)', full: 'var(--lane1-full)', icon: 'square',   iconSync: 'square_sync' },
+    { normal: 'var(--lane2-normal)', full: 'var(--lane2-full)', icon: 'cross',    iconSync: 'cross_sync' },
+    { normal: 'var(--lane3-normal)', full: 'var(--lane3-full)', icon: 'circle',   iconSync: 'circle_sync' },
+  ];
 
-function showTouchArea() {
-    startBtn.style.display = "none";
-    area.style.opacity = "1";
-    area.style.pointerEvents = "auto";
-    sendScreenInfo();
-}
+  const startScreen = document.getElementById('startScreen');
+  const startMain = document.getElementById('startMain');
+  const a2hsHint = document.getElementById('a2hsHint');
+  const statusText = document.getElementById('statusText');
+  const reconnectBtn = document.getElementById('reconnectBtn');
+  const touchArea = document.getElementById('touchArea');
+  const sliderLayoutEl = document.getElementById('sliderLayout');
+  const laneEls = [0, 1, 2, 3].map((i) => document.getElementById('lane' + i));
+  const sliderZoneEls = Array.from(document.querySelectorAll('.sliderZone'));
 
-startBtn.addEventListener("click", async () => {
-    await enterFullscreen();
-    showTouchArea();
-});
+  // 依 data-key 建立「圖示 key -> <img>」對照表。
+  function buildIconMap(container) {
+    const imgs = Object.create(null);
+    container.querySelectorAll('img[data-key]').forEach((img) => {
+      imgs[img.dataset.key] = img;
+    });
+    return { imgs, lastKey: undefined };
+  }
 
-const slider_height = 25;
-function sendScreenInfo() {
-    const topBar = document.getElementById("topBar");
-    topBar.style.height = slider_height + "%";
+  const laneIconMaps = laneEls.map(buildIconMap);
+  const sliderIconMaps = sliderZoneEls.map(buildIconMap);
 
-    let w, h;
+  function showIcon(state, key) {
+    if (state.lastKey === key) return;
+    state.lastKey = key;
+    for (const k in state.imgs) {
+      state.imgs[k].style.visibility = (k === key) ? 'visible' : 'hidden';
+    }
+  }
 
-    if (window.visualViewport) {
-        w = Math.floor(window.visualViewport.width) + 1;
-        h = Math.floor(window.visualViewport.height) + 1;
+  const gameState = {
+    width: 1,
+    height: 1,
+    sliderHeight: 0,
+    buttons: new Array(8).fill(false),
+    buttonUpTime: new Array(4).fill(0),
+    sticks: [0, 0],
+    pointers: new Map(),
+  };
+
+  function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+
+  function onPointerDownLogic(pointerId, x, y, t) {
+    if (gameState.pointers.has(pointerId)) {
+      onPointerUpLogic(pointerId, t);
+    }
+
+    const info = {
+      x, y,
+      inSliderOnly: false,
+      slideEnergy: 0,
+      pressingButton: 0,             // 0=無, 1~8=buttonIndex+1
+      pressingDirectionalButton: 0,  // -2,-1,0,1,2
+      lastUpdate: t,
+    };
+    gameState.pointers.set(pointerId, info);
+
+    if (y < gameState.sliderHeight) {
+      info.inSliderOnly = true;
+      return;
+    }
+
+    let buttonIndex = clamp(Math.floor(x * 4 / gameState.width), 0, 3);
+
+    if (gameState.buttons[buttonIndex] && gameState.buttons[buttonIndex + 4]) {
+      return;
+    }
+
+    if (gameState.buttons[buttonIndex] ||
+        (!gameState.buttons[buttonIndex + 4] &&
+         gameState.buttonUpTime[buttonIndex] !== 0 &&
+         t - gameState.buttonUpTime[buttonIndex] < 390)) {
+      buttonIndex += 4;
+    }
+
+    gameState.buttons[buttonIndex] = true;
+    sendEvent('D', buttonIndex);
+    info.pressingButton = buttonIndex + 1;
+    renderLane(buttonIndex % 4);
+  }
+
+  function onPointerUpLogic(pointerId, t) {
+    const info = gameState.pointers.get(pointerId);
+    if (!info) return;
+
+    if (info.pressingButton !== 0) {
+      const buttonIndex = info.pressingButton - 1;
+      gameState.buttons[buttonIndex] = false;
+      sendEvent('U', buttonIndex);
+      if (buttonIndex < 4) {
+        gameState.buttonUpTime[buttonIndex] = t;
+      } else {
+        gameState.buttonUpTime[buttonIndex - 4] = 0;
+      }
+      renderLane(buttonIndex % 4);
+    }
+
+    if (info.pressingDirectionalButton !== 0) {
+      gameState.sticks[Math.abs(info.pressingDirectionalButton) - 1] = 0;
+      sendEvent('u', info.pressingDirectionalButton);
+      renderSliders();
+    }
+
+    gameState.pointers.delete(pointerId);
+  }
+
+  function onPointerMoveLogic(pointerId, x, y, t) {
+    const info = gameState.pointers.get(pointerId);
+    if (!info) return;
+
+    const dt = t - info.lastUpdate;
+    const dx = x - info.x;
+    const dy = y - info.y;
+    info.x = x;
+    info.y = y;
+    info.lastUpdate = t;
+
+    const decayRate = info.inSliderOnly ? CONFIG.energyDecayRate1 : CONFIG.energyDecayRate2;
+    const sliderRequire = info.inSliderOnly ? CONFIG.sliderRequire1 : CONFIG.sliderRequire2;
+    const energyDecay = dt * decayRate;
+
+    let energy = info.slideEnergy > 0
+      ? Math.max(info.slideEnergy - energyDecay, 0)
+      : Math.min(info.slideEnergy + energyDecay, 0);
+
+    if (dx !== 0) {
+      //考慮斜向位移距離 (New Classics的星狀音符不限定方向)，同時若過於移動接近垂直，此公式也會降低其權重
+      const tRatio = dy / dx;
+      energy += dx * (1 + Math.log(Math.sqrt(1 + tRatio * tRatio)));
+    }
+
+    info.slideEnergy = clamp(energy, -sliderRequire, sliderRequire);
+
+    if (info.pressingDirectionalButton !== 0) {
+      if ((dx > 0) !== (info.pressingDirectionalButton > 0) || dx === 0) {
+        gameState.sticks[Math.abs(info.pressingDirectionalButton) - 1] = 0;
+        sendEvent('u', info.pressingDirectionalButton);
+        info.pressingDirectionalButton = 0;
+        renderSliders();
+      }
+    }
+
+    if (info.pressingDirectionalButton !== 0) return;
+
+    let stickId;
+    if (gameState.sticks[0] === 0 && (x * 2 < gameState.width || gameState.sticks[1] !== 0)) {
+      stickId = 1;
+    } else if (gameState.sticks[1] === 0) {
+      stickId = 2;
     } else {
-        w = Math.floor(window.innerWidth) + 1;
-        h = Math.floor(window.innerHeight) + 1;
+      return;
     }
 
-    const manu  = navigator.vendor || "";
-    const model = navigator.userAgent || "";
+    if (Math.abs(info.slideEnergy) >= sliderRequire) {
+      const direction = info.slideEnergy > 0 ? stickId : -stickId;
+      gameState.sticks[stickId - 1] = direction;
+      info.pressingDirectionalButton = direction;
+      sendEvent('d', direction);
+      renderSliders();
+    }
+  }
 
-    wsSend(`SCREENSIZE: ${w} ${h} ${slider_height} ${manu} ${model}\n`);
-}
+  function resetAllLogic() {
+    gameState.buttons.fill(false);
+    gameState.buttonUpTime.fill(0);
+    gameState.sticks[0] = 0;
+    gameState.sticks[1] = 0;
+    gameState.pointers.clear();
+    sendEvent('C');
+    renderAll();
+  }
 
-window.addEventListener("resize", sendScreenInfo);
-if (window.visualViewport) {
-    window.visualViewport.addEventListener("resize", sendScreenInfo);
-}
+  // ---- 畫面渲染 ----
+  const lastLaneBg = [null, null, null, null];
 
-/* ---------------- Touch handling ---------------- */
+  function renderLane(lane) {
+    const primary = gameState.buttons[lane];
+    const secondary = gameState.buttons[lane + 4];
+    const style = LANE_STYLES[lane];
 
-area.addEventListener("touchstart", e => {
+    const bg = (primary && secondary) ? style.full : style.normal;
+    if (lastLaneBg[lane] !== bg) {
+      laneEls[lane].style.background = bg;
+      lastLaneBg[lane] = bg;
+    }
+    showIcon(laneIconMaps[lane], (primary || secondary) ? style.iconSync : style.icon);
+  }
+
+  function renderSliders() {
+    const s0 = gameState.sticks[0];
+    const s1 = gameState.sticks[1];
+
+    if (s0 !== 0 && s1 !== 0) {
+      showIcon(sliderIconMaps[0], s0 > 0 ? 'slide_right_sync' : 'slide_left_sync');
+      showIcon(sliderIconMaps[1], s1 > 0 ? 'slide_right_sync' : 'slide_left_sync');
+    } else {
+      showIcon(sliderIconMaps[0], s0 === 0 ? null : (s0 === 1 ? 'slide_right' : 'slide_left'));
+      showIcon(sliderIconMaps[1], s1 === 0 ? null : (s1 === 2 ? 'slide_right' : 'slide_left'));
+    }
+  }
+
+  function renderAll() {
+    for (let lane = 0; lane < 4; lane++) renderLane(lane);
+    renderSliders();
+  }
+
+  // ---- 版面量測 ----
+  function relayout() {
+    const rect = touchArea.getBoundingClientRect();
+    gameState.width = Math.max(rect.width, 1);
+    gameState.height = Math.max(rect.height, 1);
+    gameState.sliderHeight = sliderLayoutEl.getBoundingClientRect().height;
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(`T($${gameState.width}x${gameState.height}) ${navigator.vendor || ""} ${navigator.userAgent || ""}\n`);
+    }
+  }
+
+  window.addEventListener('resize', relayout);
+  if (window.screen && window.screen.orientation) {
+    window.screen.orientation.addEventListener('change', () => setTimeout(relayout, 50));
+  }
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden && gameState.pointers.size > 0) {
+      resetAllLogic();
+    }
+  });
+
+  // ---- 觸控事件 ----
+  touchArea.addEventListener("touchstart", e => {
     e.preventDefault();
     for (const t of e.changedTouches) {
-        lastPos.set(t.identifier, t.clientX);
-        wsSend(`D ${t.identifier} ${t.clientX | 0} ${t.clientY | 0}\n`);
+      onPointerDownLogic(t.identifier, t.clientX, t.clientY, e.timeStamp);
     }
-}, { passive: false });
-
-area.addEventListener("touchmove", e => {
+  }, { passive: false });
+  touchArea.addEventListener("touchmove", e => {
     e.preventDefault();
-    let msg = "";
-    let changed = false;
-
-    for (const t of e.changedTouches) {
-        if (Math.abs(lastPos.get(t.identifier) - t.clientX) > 2) {
-            lastPos.set(t.identifier, t.clientX);
-            msg += ` ${t.identifier} ${t.clientX | 0} ${t.clientY | 0}`;
-            changed = true;
-        }
+    for (const t of e.touches) {
+      onPointerMoveLogic(t.identifier, t.clientX, t.clientY, e.timeStamp);
     }
-
-    if (changed) wsSend("M" + msg + "\n");
-}, { passive: false });
-
-area.addEventListener("touchend", e => {
+  }, { passive: false });
+  touchArea.addEventListener("touchend", e => {
     e.preventDefault();
     for (const t of e.changedTouches) {
-        lastPos.delete(t.identifier);
-        wsSend(`U ${t.identifier} ${t.clientX | 0} ${t.clientY | 0}\n`);
+      onPointerUpLogic(t.identifier, e.timeStamp);
     }
-}, { passive: false });
-
-area.addEventListener("touchcancel", e => {
+  }, { passive: false });
+  touchArea.addEventListener("touchcancel", e => {
     e.preventDefault();
-    lastPos.clear();
-    wsSend("C\n");
-}, { passive: false });
+    resetAllLogic()
+  }, { passive: false });
+
+  function sendEvent(cmd, value) {
+    if (!ws || ws.readyState !== WebSocket.OPEN) return;
+    if (value === undefined) {
+      ws.send(new Int8Array([cmd.charCodeAt(0)]));
+    } else {
+      const buf = new Int8Array(2);
+      buf[0] = cmd.charCodeAt(0);
+      buf[1] = value;
+      ws.send(buf.buffer);
+    }
+  }
+
+  function handleIncoming(event) {
+    const data = event.data;
+    if (!(data instanceof ArrayBuffer) || data.byteLength !== 8) return;
+
+    const inBytes = new Uint8Array(data);
+    const nowNs = BigInt(Math.round(performance.now() * 1e6));
+
+    const outBuf = new ArrayBuffer(17); // 1(cmd) + 8(echo) + 8(timestamp)
+    const outView = new DataView(outBuf);
+    outView.setUint8(0, 0x52); // 'R'
+    for (let j = 0; j < 8; j++) {
+      outView.setUint8(1 + j, inBytes[j]);
+    }
+    outView.setBigInt64(9, nowNs, true);
+
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(outBuf);
+    }
+  }
+
+  // navigator.standalone 只存在於 iOS Safari:
+  //   true  = 已透過「加入主畫面」以獨立模式啟動,本身就是全螢幕
+  //   false = 目前是 Safari 分頁模式,requestFullscreen 會出現「看起來你正在全螢幕下輸入」
+  //   undefined = 非 iOS Safari(如 Android Chrome)
+  const standaloneState = window.navigator.standalone;
+
+  function startConnection() {
+    if (connecting) return;
+    connecting = true;
+
+    const socket = new WebSocket("ws://" + location.host + "/ws");
+    socket.binaryType = 'arraybuffer';
+    ws = socket;
+
+    socket.addEventListener('open', () => {
+      connecting = false;
+      hasConnectedOnce = true;
+      statusText.style.display = 'none';
+      enterTouchArea();
+    });
+
+    socket.addEventListener('message', handleIncoming);
+
+    socket.addEventListener('close', () => {
+      connecting = false;
+      if (hasConnectedOnce) {
+        statusText.style.display = 'flex';
+      } else {
+        startMain.textContent = 'Connecting...failed (tap to retry)';
+        if (standaloneState === false) a2hsHint.style.display = 'flex';
+        startScreen.style.display = 'flex';
+      }
+    });
+
+    socket.addEventListener('error', () => {
+      // close 事件會接著觸發,實際處理都交給 close 統一負責
+    });
+  }
+
+  reconnectBtn.addEventListener('click', () => {
+    startConnection();
+  });
+
+  // ---- 啟動流程 ----
+  function enterTouchArea() {
+    startScreen.style.display = 'none';
+    touchArea.style.display = 'block';
+    relayout();
+    renderAll();
+  }
+
+  async function tryFullscreen() {
+    const el = document.documentElement;
+    try {
+      if (el.requestFullscreen) {
+        await el.requestFullscreen();
+      } else if (el.webkitRequestFullscreen) {
+        await el.webkitRequestFullscreen();
+      }
+    } catch (_) {
+      // 部分瀏覽器可能不支援或拒絕全螢幕,忽略即可
+    }
+  }
+
+  if (standaloneState === true) {
+    // 已經是獨立模式,本身就是全螢幕,不必等待點擊、也不必呼叫 requestFullscreen()
+    startMain.textContent = 'Connecting...';
+    startConnection();
+  } else if (standaloneState === false) {
+    // 顯示「加入主畫面」教學
+    a2hsHint.style.display = 'flex';
+  }
+
+  startScreen.addEventListener('click', async () => {
+    if (connecting) return;
+    a2hsHint.style.display = 'none';
+    await tryFullscreen();
+    startMain.textContent = 'Connecting...';
+    startConnection();
+  });
+
+})();
 </script>
 </body>
 </html>

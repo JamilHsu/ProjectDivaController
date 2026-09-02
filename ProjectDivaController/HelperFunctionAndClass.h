@@ -17,7 +17,6 @@
 #pragma comment(lib, "iphlpapi.lib")
 const char* vkToString(BYTE vk) {
     if (vk >= '0' && vk <= 'Z') {
-        constexpr int a = 'A' - '9';
         return ((vk - '0') * 2) + "0\0""1\0""2\0""3\0""4\0""5\0""6\0""7\0""8\0""9\0"
             "\0\0\0\0\0\0\0\0\0\0\0\0\0\0"
             "A\0B\0C\0D\0E\0F\0G\0H\0I\0J\0K\0L\0M\0N\0O\0P\0Q\0R\0S\0T\0U\0V\0W\0X\0Y\0Z";
@@ -168,82 +167,42 @@ const char* vkToString(BYTE vk) {
     return "Invalid VK_CODE";
 }
 
-class cheap_istrstream {
-    const char* ptr;
-public:
-    cheap_istrstream(const char* str = nullptr) :ptr(str) {}
-    const char* data()const noexcept {
-        return ptr;
+struct format_thousands_separator {
+    long long value;
+};
+template <>
+struct std::formatter<format_thousands_separator> {
+    std::formatter<std::string_view> base_;
+
+    constexpr auto parse(std::format_parse_context& ctx)
+    {
+        return base_.parse(ctx);
     }
-    int getInt() {
-        checkptr();
-        while (isblank(*ptr) || *ptr == '\n') ++ptr;
-        int temp = atoi(ptr);
-        while (!(isblank(*ptr) || *ptr == '\n')) {
-            if (*ptr == '\0') {
-                ptr = nullptr;
-                break;
+
+    auto format(format_thousands_separator num, std::format_context& ctx) const
+    {
+        char digits_buf[26]; // "-9,223,372,036,854,775,808"
+        auto end = std::to_chars(digits_buf, digits_buf + sizeof(digits_buf), num.value).ptr;
+
+        char* p = std::end(digits_buf);
+
+        int group = 0;
+
+        while (end != digits_buf) {
+            char c = *--end;
+
+            if (group == 3 && c != '-') {
+                *--p = ',';
+                group = 0;
             }
-            ++ptr;
+
+            *--p = c;
+            ++group;
         }
-        return temp;
-    }
-    long long getLLInt() {
-        checkptr();
-        while (isblank(*ptr) || *ptr == '\n') ++ptr;
-        long long temp = atoll(ptr);
-        while (!(isblank(*ptr) || *ptr == '\n')) {
-            if (*ptr == '\0') {
-                ptr = nullptr;
-                break;
-            }
-            ++ptr;
-        }
-        return temp;
-    }
-    double getDouble() {
-        checkptr();
-        while (isblank(*ptr) || *ptr == '\n') ++ptr;
-        double temp = atof(ptr);
-        while (!(isblank(*ptr) || *ptr == '\n')) {
-            if (*ptr == '\0') {
-                ptr = nullptr;
-                break;
-            }
-            ++ptr;
-        }
-        return temp;
-    }
-    void skip() {
-        checkptr();
-        while (isblank(*ptr) || *ptr == '\n') ++ptr;
-        while (!(isblank(*ptr) || *ptr == '\n')) {
-            if (*ptr == '\0') {
-                ptr = nullptr;
-                break;
-            }
-            ++ptr;
-        }
-    }
-    void checkptr() {
-        if (ptr == nullptr) {
-            throw std::runtime_error("Invalid data in cheap_istrstream");
-        }
+
+        return base_.format(std::string_view{ p, static_cast<size_t>(std::end(digits_buf) - p) }, ctx);
     }
 };
-std::string format_thousands_separator(long long value) {
-    std::string str = std::format("{}", value);
-    if (str.length() > 3) [[likely]] {
-        str.insert(str.end() - 3, ',');
-        if (str.length() > 7) {
-            str.insert(str.end() - 7, ',');
-            if (str.length() > 11) {
-                str.insert(str.end() - 11, ',');
-            }
-        }
-    }
-    return str;
-}
 static void SetConsoleColor(int color = FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED) { SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), color); }
 
 template <class... _Types>
@@ -306,83 +265,86 @@ void listLocalIPsAndAdapters() {
 std::chrono::nanoseconds time_since_epoch() noexcept {
     return std::chrono::steady_clock::now().time_since_epoch();
 }
-DWORD GetTickCount32() noexcept {
-    return static_cast<DWORD>(GetTickCount64());
-}
-class NetStabilityMeter {
-    std::vector<long long> samples;
-    long long adjuster;//用於調整數值以避免整數溢位
+class NetStabilityMeter2 {
+    struct Sample {
+        long long serverSendTime;
+        long long clientRevcTime; //Once the client receives the message, it will reply immediately; therefore, clientRevcTime == clientSendTime.
+        long long serverRevcTime;
+    };
+    std::vector<Sample> rtsamples;
+    long long estimate_offset = 0; //delay= serverRevcTime - clientSendTime - offset
+    long long deviation_range = 0;
+    static constexpr int max_sample_count = 512;
 public:
-    NetStabilityMeter() :adjuster() {
-        samples.reserve(100);
+    NetStabilityMeter2() {
+        rtsamples.reserve(max_sample_count);
     }
-    bool AddSamples(long long sample) {
-        if (adjuster) {
-            sample += adjuster;
+    int AddSample(long long serverSendTime, long long clientRevcTime, long long serverRevcTime) {
+        if (rtsamples.size() < max_sample_count) {
+            rtsamples.push_back({ serverSendTime ,clientRevcTime,serverRevcTime });
         }
         else {
-            adjuster = -sample;
-            sample = 0;
+            EvaluateDelay();
+            rtsamples.clear();
+            return 0;
         }
-        samples.push_back(sample);
-        if (samples.size() % 100 == 0) {
-            std::sort(samples.end() - 100, samples.end());
-            long long maxmin10 = 0;
-            for (int i = 1; i <= 10; ++i) {
-                maxmin10 += samples.end()[-i] - samples.end()[-i - 90];
-            }
-            double average = std::reduce(samples.end() - 100, samples.end()) / 100.0;
-            double mean_absolute_deviation = std::reduce(samples.end() - 100, samples.end(), 0.0,
-                [average](double init, long long value) {return init + std::abs(value - average); }
-            ) / 100.0;
-            double standard_deviation = std::sqrt(
-                std::reduce(samples.end() - 100, samples.end(), 0.0,
-                    [](double init, long long value) {return init + static_cast<double>(value) * value; })
-                / 100.0 - average * average
-            );
-            std::print("Connection stability test results:\n"
-                "This 100 tests:\n"
-                "max - min:              {:>16}ns\n"
-                "max10% - min10%:        {:>16}ns\n"
-                "standard deviation:     {:>16}ns\n"
-                "mean absolute deviation:{:>16}ns\n\n"
-                , format_thousands_separator(samples.back() - samples.end()[-100])
-                , format_thousands_separator(maxmin10 / 10)
-                , format_thousands_separator(static_cast<long long>(standard_deviation))
-                , format_thousands_separator(static_cast<long long>(mean_absolute_deviation))
-            );
-            if (samples.size() > 100) {
-                std::sort(samples.begin(), samples.end());
-                maxmin10 = 0;
-                const double element_count = static_cast<double>(samples.size());
-                for (int i = 1, k = int(samples.size() / 10); i <= k; ++i) {
-                    maxmin10 += samples.end()[-i] - samples[i - 1];
-                }
-                average = std::reduce(samples.begin(), samples.end()) / element_count;
-                mean_absolute_deviation = std::reduce(samples.begin(), samples.end(), 0.0,
-                    [average](double init, long long value) {return init + std::abs(value - average); }
-                ) / element_count;
-                standard_deviation = std::sqrt(
-                    std::reduce(samples.begin(), samples.end(), 0.0,
-                        [](double init, long long value) {
-                            return init + static_cast<double>(value) * value; })
-                    / element_count - average * average
-                );
-                std::print("All {} tests:\n"
-                    "max - min:              {:>16}ns\n"
-                    "max10% - min10%:        {:>16}ns\n"
-                    "standard deviation:     {:>16}ns\n"
-                    "mean absolute deviation:{:>16}ns\n\n\n"
-                    , samples.size()
-                    , format_thousands_separator(samples.back() - samples.front())
-                    , format_thousands_separator(maxmin10 * 10 / samples.size())
-                    , format_thousands_separator(static_cast<long long>(standard_deviation))
-                    , format_thousands_separator(static_cast<long long>(mean_absolute_deviation))
-                );
-            }
-            return true;
+        return 1;
+    }
+    void EvaluateOffset() {
+        long long upper_bound_offset; {
+            auto it = std::min_element(rtsamples.begin(), rtsamples.end(),
+                [](const Sample& a, const Sample& b) {return a.serverRevcTime - a.clientRevcTime < b.serverRevcTime - b.clientRevcTime; });
+            upper_bound_offset = it->serverRevcTime - it->clientRevcTime;
         }
-        return false;
+        long long lower_bound_offset; {
+            auto it = std::max_element(rtsamples.begin(), rtsamples.end(),
+                [](const Sample& a, const Sample& b) {return a.serverSendTime - a.clientRevcTime < b.serverSendTime - b.clientRevcTime; });
+            lower_bound_offset = it->serverSendTime - it->clientRevcTime;
+        }
+        long long oldoffset = estimate_offset;
+        deviation_range = (upper_bound_offset - lower_bound_offset) / 2;
+        estimate_offset = lower_bound_offset + deviation_range;
+    }
+    void EvaluateDelay() {
+        EvaluateOffset();
+        long long average = 0; double standard_deviation; long long maxdelay = 0; {
+            double squares_sum = 0;
+            for (const auto& i : rtsamples) {
+                long long delay = i.serverRevcTime - i.clientRevcTime - estimate_offset;
+                average += delay;
+                maxdelay = (std::max)(maxdelay, delay);
+                squares_sum += static_cast<double>(delay * delay);
+            }
+            average /= rtsamples.size();
+            standard_deviation = std::sqrt((squares_sum / rtsamples.size()) - average * average);
+        }
+        std::println("In recent {} tests:\n"
+            "Average latency:   {:>16}ns\n"
+            "Maximum latency:   {:>16}ns\n"
+            "Accuracy:          ±{:>15}ns + 1ms\n"
+            "Standard deviation:{:>16}ns\n\n"
+            , max_sample_count
+            , format_thousands_separator(average)
+            , format_thousands_separator(maxdelay)
+            , format_thousands_separator(deviation_range)
+            , format_thousands_separator(static_cast<long long>(standard_deviation)));
     }
 };
+
+void BusySleepUntil(std::chrono::steady_clock::time_point tp) {
+    for (;;) {
+        auto time_left = tp - std::chrono::steady_clock::now();
+        if (time_left.count() <= 0) {
+            return;
+        }
+        if (time_left.count() >= 8'000'000) {
+            Sleep((time_left.count() / 1'000'000) - 7);
+        }
+        else {
+            for (int i = 0; i < 8192; ++i) {
+                _mm_pause();
+            }
+        }
+    }
+}
 #endif // HELPERFUNCTIONANDCLASS_H
